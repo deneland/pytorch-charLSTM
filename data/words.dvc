@@ -1,0 +1,5 @@
+outs:
+- md5: 5afc8239d131c02fbca0f27facaea890.dir
+  size: 972398
+  nfiles: 1
+  path: words
