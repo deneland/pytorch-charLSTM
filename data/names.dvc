@@ -1,0 +1,5 @@
+outs:
+- md5: 37c9688f8d5f9e8493c1bacf76c9d2c6.dir
+  size: 27125
+  nfiles: 1
+  path: names

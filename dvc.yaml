@@ -1,0 +1,11 @@
+stages:
+  train:
+    cmd: python3 src/train.py data/names/English.txt
+    deps:
+    - data/names/English.txt
+    - src/train.py
+    params:
+    - train.epochs
+    - train.learning_rate
+    outs:
+    - data/models/
