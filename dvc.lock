@@ -7,14 +7,17 @@ stages:
       md5: 950fc1c5c1406e12f1d3c67bbb33ed66
       size: 27125
     - path: src/train.py
-      md5: 126f24e972097523349e2276fe876d9d
-      size: 2283
+      md5: a868b61bca00e511c24ecb214e4f17aa
+      size: 2433
     params:
       params.yaml:
         train.epochs: 30
         train.learning_rate: 0.0005
     outs:
     - path: data/models/
-      md5: b6485b20e9d14675101fdba8494da048.dir
+      md5: 712a381983acc4f262f90e2db93bf075.dir
       size: 186903
       nfiles: 1
+    - path: scores.json
+      md5: 9466cc920e2b9722760eb3fca8cc8627
+      size: 39

@@ -9,3 +9,6 @@ stages:
     - train.learning_rate
     outs:
     - data/models/
+    metrics:
+    - scores.json:
+        cache: false

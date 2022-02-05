@@ -12,7 +12,7 @@ from predict import *
 import time
 import math
 import yaml
-
+import json
 
 def train(net, line, device, params):
     criterion = torch.nn.NLLLoss()
@@ -81,9 +81,16 @@ if __name__ == "__main__":
             
             output, loss = train(net, lines[i], device, params)
             all_losses += loss
+            avg_loss = all_losses/(i+1)
 
             if iter % 5000 == 0:
-                print(f"{time_since(ts)} - iteration {iter :7d} - epoch {e+1} ({i/len(lines)*100 :3.0f}%) - loss {all_losses/i :.4f}")
+                print(f"{time_since(ts)} - iteration {iter :7d} - epoch {e+1} ({i/len(lines)*100 :3.0f}%) - loss {avg_loss :.4f}")
                 for i in range(3):
                     print('\t' + sample(net, device, random.choice(characters)))
-                torch.save(net.state_dict(), 'data/models/model.pth')
+
+            
+
+    torch.save(net.state_dict(), 'data/models/model.pth')
+
+    with open('scores.json', "w") as fd:
+        json.dump({"train_loss": avg_loss}, fd, indent=4)
