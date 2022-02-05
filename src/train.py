@@ -71,7 +71,7 @@ if __name__ == "__main__":
         net.load_state_dict(torch.load(sys.argv[2]))
 
     iter = 0
-
+    losses = []
     ts = time.time()
     for e in range(params['epochs']):
         random.shuffle(lines)
@@ -86,7 +86,9 @@ if __name__ == "__main__":
             if iter % 5000 == 0:
                 print(f"{time_since(ts)} - iteration {iter :7d} - epoch {e+1} ({i/len(lines)*100 :3.0f}%) - loss {avg_loss :.4f}")
                 for i in range(3):
-                    print('\t' + sample(net, device, random.choice(characters)))
+                    print('\t' + sample(net, device, random.choice('ABCDEFGHIJKLMNOPQRSTUVWXYZ')))
+        
+        losses.append((e+1, avg_loss))
 
             
 
@@ -94,3 +96,15 @@ if __name__ == "__main__":
 
     with open('scores.json', "w") as fd:
         json.dump({"train_loss": avg_loss}, fd, indent=4)
+
+    with open('loss_curve.json', "w") as fd:
+        json.dump(
+            {
+                "prc": [
+                    {"epoch": e, "loss": loss}
+                    for e, loss in losses
+                ]
+            },
+            fd,
+            indent=4,
+        )

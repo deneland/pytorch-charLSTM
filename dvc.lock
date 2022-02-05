@@ -7,17 +7,20 @@ stages:
       md5: 950fc1c5c1406e12f1d3c67bbb33ed66
       size: 27125
     - path: src/train.py
-      md5: a868b61bca00e511c24ecb214e4f17aa
-      size: 2433
+      md5: a01e4509bc1a8a6af3c26a99698da65c
+      size: 2788
     params:
       params.yaml:
         train.epochs: 30
         train.learning_rate: 0.0005
     outs:
     - path: data/models/
-      md5: 712a381983acc4f262f90e2db93bf075.dir
+      md5: b4efb61248639f7709d28ddc270f1810.dir
       size: 186903
       nfiles: 1
+    - path: loss_curve.json
+      md5: b2edd2115846c3322e12f70fd0be9403
+      size: 2546
     - path: scores.json
-      md5: 9466cc920e2b9722760eb3fca8cc8627
-      size: 39
+      md5: ba0aae240d6a9a5582f1bd8e103aa80e
+      size: 40
