@@ -4,28 +4,7 @@ import unicodedata
 import string
 import random
 from torch.utils.data import Dataset
-
-def unicodeToAscii(s):
-    return "".join(
-        c
-        for c in unicodedata.normalize("NFD", s)
-        if unicodedata.category(c) != "Mn" and c in characters
-    )
-
-
-def character_onehot(character, character_lookup):
-    onehot = [0 for _ in range(len(character_lookup.keys()))]
-    onehot[character_lookup[character]] = 1
-
-    return onehot
-
-
-def clean_line(line):
-    line = line.strip()
-    # line = line.lower()
-    line = unicodeToAscii(line)
-
-    return line
+import torch.nn as nn
 
 
 def decode_tensor(tensor, characters, topk=1):
@@ -39,18 +18,6 @@ def decode_tensor(tensor, characters, topk=1):
     return next_char
 
 
-def get_entry(text, text_length, segment_length):
-    start = random.randint(0, text_length - segment_length)
-    batch = text[start : start + segment_length]
-
-    return batch
-
-
-def get_batch(batch_size, text, text_length, segment_length):
-    return [get_entry(text, text_length, segment_length) for _ in range(batch_size)]
-
-
-
 class TextDataset(Dataset):
     def __init__(self, text_file, segment_length, character_lookup=None):
         with open(text_file, "r") as f:
@@ -62,6 +29,7 @@ class TextDataset(Dataset):
         else:
             character_lookup = character_lookup
 
+        self.n_char = len(list(self.character_lookup.keys()))
         self.segment_length = segment_length
 
     def __len__(self):
@@ -77,18 +45,14 @@ class TextDataset(Dataset):
         return input, output
 
     def get_input_tensor(self, line):
-        onehot_matrix = [character_onehot(c, self.character_lookup) for c in line]
-        tensor = torch.tensor(onehot_matrix)
-        # tensor = torch.unsqueeze(tensor, 0)
+        indexes = torch.LongTensor([self.character_lookup[c] for c in line])
+        tensor = nn.functional.one_hot(indexes, self.n_char)
 
         return tensor
 
-
     def get_target_tensor(self, line):
-        letter_indexes = [self.character_lookup[char] for i, char in enumerate(line) if i != 0]
-        # letter_indexes.append(self.character_lookup["EOL"])
-        tensor = torch.LongTensor(letter_indexes)
-        # tensor = torch.unsqueeze(tensor, 0)
+        indexes = [self.character_lookup[c] for c in line[1:]]
+        tensor = torch.LongTensor(indexes)
 
         return tensor
 

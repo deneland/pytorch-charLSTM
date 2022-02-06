@@ -2,10 +2,10 @@ import sys
 import random
 from model import *
 from data import *
-
+import torch.nn as nn
 def get_input_tensor(line, character_lookup):
-    onehot_matrix = [character_onehot(c, character_lookup) for c in line]
-    tensor = torch.tensor(onehot_matrix)
+    indexes = torch.LongTensor([character_lookup[c] for c in line])
+    tensor = nn.functional.one_hot(indexes, len(list(character_lookup.keys())))
     tensor = torch.unsqueeze(tensor, 0)
     return tensor
 

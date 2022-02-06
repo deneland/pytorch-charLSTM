@@ -49,7 +49,7 @@ if __name__ == "__main__":
     params = yaml.safe_load(open("params.yaml"))["train"]
 
     ds = TextDataset(sys.argv[1], params["segment_length"])
-    dataloader = DataLoader(ds, batch_size=params["batch_size"], shuffle=False)
+    dataloader = DataLoader(ds, batch_size=params["batch_size"], shuffle=False, num_workers=12)
 
     os.makedirs("data/models", exist_ok=True)
 
