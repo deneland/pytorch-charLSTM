@@ -1,3 +1,4 @@
+import re
 import sys
 from dataclasses import dataclass
 import torch
@@ -14,20 +15,24 @@ import math
 import yaml
 import json
 
-def train(net, line, device, params):
+def train(net, batch, device, params):
     criterion = torch.nn.NLLLoss()
 
-    hidden = net.init_state()#.to(device)
+    hidden = net.init_state(params['batch_size'])#.to(device)
     net.zero_grad()
 
     loss = 0
-    input_tensor = get_input_tensor(line).to(device)
-    target_tensor = get_target_tensor(line).to(device)
+    input_tensor = [get_input_tensor(line, character_lookup) for line in batch]
+    input_tensor = torch.cat(tuple(input_tensor), 0)
 
-    for i, char_tensor in enumerate(input_tensor):
-        output, hidden = net(char_tensor, hidden)
+    target_tensor = [get_target_tensor(line, character_lookup) for line in batch]
+    target_tensor = torch.cat(tuple(target_tensor), 0)
+
+    n_char = input_tensor.shape[1]
+    for char_idx in range(n_char):
+        output, hidden = net(input_tensor[:, char_idx, :], hidden)
         # hidden = hidden.to(device)
-        loss += criterion(output[0], target_tensor[i])
+        loss += criterion(output, target_tensor[:, char_idx])
 
     loss.backward()
 
@@ -45,7 +50,13 @@ def time_since(since):
 
 if __name__ == "__main__":
     with open(sys.argv[1], "r") as f:
-        lines = [clean_line(line) for line in f.readlines()]
+        text = ''.join(f.readlines())
+
+    characters = list(set(text))
+    character_lookup = {character: i for i, character in enumerate(characters)}
+    character_lookup["EOL"] = len(character_lookup.keys())
+    n_characters = len(character_lookup.keys())
+    text_length = len(text)
 
     os.makedirs('data/models', exist_ok=True)
 
@@ -57,36 +68,36 @@ if __name__ == "__main__":
     #     device = torch.device("cpu") 
     device = torch.device("cpu") 
 
-    net = RNN(n_characters, 64, n_characters)
+    net = RNN(n_characters, params['hidden_size'], n_characters)
 
     net.to(device)
 
     if len(sys.argv)>2:
         net.load_state_dict(torch.load(sys.argv[2]))
 
-    iter = 0
+    avg_loss = 0
     losses = []
     ts = time.time()
-    for e in range(params['epochs']):
-        random.shuffle(lines)
-        all_losses = 0
-        for i in range(len(lines)):
-            iter += 1
-            
-            output, loss = train(net, lines[i], device, params)
-            all_losses += loss
-            avg_loss = all_losses/(i+1)
+    for iter in range(params['iterations']):
+        batch = get_batch(params['batch_size'], text, text_length, params['segment_length'])
+        output, loss = train(net, batch, device, params)
+        avg_loss += loss
 
-            if iter % 1000 == 0:
-                print(f"{time_since(ts)} - iteration {iter :7d} - epoch {e+1} ({i/len(lines)*100 :3.0f}%) - loss {avg_loss :.4f}")
-                for i in range(3):
-                    print('\t' + sample(net, device, random.choice('ABCDEFGHIJKLMNOPQRSTUVWXYZ')))
+        if iter % params['report_every'] == 0:
+            avg_loss /= params['report_every']
+
+            print(f"{time_since(ts)} - iteration {iter :7d} - loss {avg_loss :.4f}")
+            
+            for i in range(3):
+                print('\n')
+                print(sample(net, device, random.choice(characters), character_lookup, 1))
         
-        losses.append((e+1, avg_loss))
+            losses.append((iter, avg_loss))
+            torch.save(net.state_dict(), 'data/models/model.pth')
 
             
 
-    torch.save(net.state_dict(), 'data/models/model.pth')
+    
 
     with open('scores.json', "w") as fd:
         json.dump({"train_loss": avg_loss}, fd, indent=4)

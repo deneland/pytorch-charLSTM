@@ -3,13 +3,6 @@ import unicodedata
 import string
 import random
 
-# characters = string.printable
-# characters = 'abcdefghijklmnopqrstuvwxyz'
-characters = string.ascii_letters + " .,;'-"
-character_lookup = {character: i for i, character in enumerate(characters)}
-character_lookup["EOL"] = len(character_lookup.keys())
-n_characters = len(character_lookup.keys())
-
 
 def unicodeToAscii(s):
     return "".join(
@@ -19,7 +12,7 @@ def unicodeToAscii(s):
     )
 
 
-def character_onehot(character):
+def character_onehot(character, character_lookup):
     onehot = [0 for _ in range(len(character_lookup.keys()))]
     onehot[character_lookup[character]] = 1
 
@@ -32,20 +25,23 @@ def clean_line(line):
 
     return line
 
-def get_input_tensor(line):
-    onehot_matrix = [character_onehot(c) for c in line]
+def get_input_tensor(line, character_lookup):
+    onehot_matrix = [character_onehot(c, character_lookup) for c in line]
     # onehot_matrix.append(character_onehot("EOL"))
     tensor = torch.tensor(onehot_matrix)
-    tensor = torch.unsqueeze(tensor, 1)
+    tensor = torch.unsqueeze(tensor, 0)
 
     return tensor
 
-def get_target_tensor(line):
+def get_target_tensor(line, character_lookup):
     letter_indexes = [character_lookup[char] for i, char in enumerate(line) if i != 0]
     letter_indexes.append(character_lookup['EOL'])
-    return torch.LongTensor(letter_indexes)
+    tensor =  torch.LongTensor(letter_indexes)
+    tensor = torch.unsqueeze(tensor, 0)
 
-def decode_tensor(tensor, topk=1):
+    return tensor
+
+def decode_tensor(tensor, characters, topk=1):
     try:
         _, topi = tensor.topk(topk)
         topi = random.choice(topi)
@@ -54,3 +50,12 @@ def decode_tensor(tensor, topk=1):
         next_char = "EOL"
 
     return next_char
+
+def get_entry(text, text_length, segment_length):
+    start = random.randint(0, text_length-segment_length)
+    batch = text[start:start+segment_length]
+
+    return batch
+
+def get_batch(batch_size, text, text_length, segment_length):
+    return [get_entry(text, text_length, segment_length) for _ in range(batch_size)]

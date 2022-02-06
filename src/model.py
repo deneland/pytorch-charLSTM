@@ -43,7 +43,6 @@ class LSTM(nn.Module):
 
     def forward(self, input, state):
         hidden, cell_state = state
-
         input_combined = torch.cat((input, hidden), 1)
         
         forget_gate = self.sigmoid(self.forget_gate(input_combined)) 
@@ -63,18 +62,22 @@ class RNN(nn.Module):
         super(RNN, self).__init__()
         self.hidden_size = hidden_size
 
-        self.lstm = LSTM(input_size, hidden_size)
+        self.lstm_1 = LSTM(input_size, hidden_size)
+        self.lstm_2 = LSTM(hidden_size, hidden_size)
+        self.lstm_3 = LSTM(hidden_size, hidden_size)
         self.output = nn.Linear(hidden_size, output_size)
         self.dropout = nn.Dropout(0.1)
         self.softmax = nn.LogSoftmax(dim=1)
 
     def forward(self, input, state):
-        output, new_state = self.lstm(input, state)
+        output, state = self.lstm_1(input, state)
+        output, state = self.lstm_2(output, state)
+        output, state = self.lstm_3(output, state)
         output = self.output(output)
         output = self.dropout(output)
         output = self.softmax(output)
 
-        return output, new_state
+        return output, state
 
-    def init_state(self):
-        return (torch.zeros(1, self.hidden_size), torch.zeros(1, self.hidden_size))
+    def init_state(self, batch_size):
+        return (torch.zeros(batch_size, self.hidden_size), torch.zeros(batch_size, self.hidden_size))
