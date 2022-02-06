@@ -3,6 +3,8 @@ import random
 from model import *
 from data import *
 import torch.nn as nn
+
+
 def get_input_tensor(line, character_lookup):
     indexes = torch.LongTensor([character_lookup[c] for c in line])
     tensor = nn.functional.one_hot(indexes, len(list(character_lookup.keys())))
@@ -28,16 +30,22 @@ def sample(net, init_char, character_lookup, batch_size):
 
 
 if __name__ == "__main__":
-    n_characters = 26
-    net = RNN(n_characters, 64, n_characters)
+    import json
 
+    with open(sys.argv[2], 'r') as f:
+        character_lookup = json.load(f)
+
+    characters = list(character_lookup.keys())
+    n_characters = len(characters)
+
+    net = RNN(n_characters, 128, n_characters, torch.device('cpu'))
     net.load_state_dict(torch.load(sys.argv[1]))
     net.eval()
 
-    if len(sys.argv) > 2:
-        first_char = sys.argv[2]
+    if len(sys.argv) > 3:
+        first_char = sys.argv[3]
     else:
         first_char = random.choice(characters)
 
-    generated = sample(net, first_char)
+    generated = sample(net, first_char, character_lookup, 1)
     print(generated)
