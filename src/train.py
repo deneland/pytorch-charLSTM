@@ -17,7 +17,7 @@ import json
 def train(net, line, device, params):
     criterion = torch.nn.NLLLoss()
 
-    hidden = net.init_hidden().to(device)
+    hidden = net.init_state()#.to(device)
     net.zero_grad()
 
     loss = 0
@@ -26,13 +26,8 @@ def train(net, line, device, params):
 
     for i, char_tensor in enumerate(input_tensor):
         output, hidden = net(char_tensor, hidden)
-        hidden = hidden.to(device)
+        # hidden = hidden.to(device)
         loss += criterion(output[0], target_tensor[i])
-
-        # print(output[0])
-        # print(target_tensor[i])
-        # print(target_tensor[i].unsqueeze(0).shape)
-
 
     loss.backward()
 
@@ -52,7 +47,6 @@ if __name__ == "__main__":
     with open(sys.argv[1], "r") as f:
         lines = [clean_line(line) for line in f.readlines()]
 
-    # print(lines)
     os.makedirs('data/models', exist_ok=True)
 
     params = yaml.safe_load(open("params.yaml"))["train"]
@@ -63,7 +57,7 @@ if __name__ == "__main__":
     #     device = torch.device("cpu") 
     device = torch.device("cpu") 
 
-    net = RNN(n_characters, 128, n_characters)
+    net = RNN(n_characters, 64, n_characters)
 
     net.to(device)
 
@@ -83,7 +77,7 @@ if __name__ == "__main__":
             all_losses += loss
             avg_loss = all_losses/(i+1)
 
-            if iter % 5000 == 0:
+            if iter % 1000 == 0:
                 print(f"{time_since(ts)} - iteration {iter :7d} - epoch {e+1} ({i/len(lines)*100 :3.0f}%) - loss {avg_loss :.4f}")
                 for i in range(3):
                     print('\t' + sample(net, device, random.choice('ABCDEFGHIJKLMNOPQRSTUVWXYZ')))

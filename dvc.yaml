@@ -4,6 +4,7 @@ stages:
     deps:
     - data/names/English.txt
     - src/train.py
+    - src/model.py
     params:
     - train.epochs
     - train.learning_rate

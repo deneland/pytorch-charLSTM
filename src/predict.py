@@ -8,11 +8,11 @@ def sample(net, device, init_char=random.choice(characters)):
         result = init_char
 
         input = get_input_tensor(result[-1])[0].to(device)
-        hidden = net.init_hidden().to(device)
+        hidden = net.init_state()#.to(device)
 
         while True:
             output, hidden = net(input, hidden)
-            hidden = hidden.to(device)
+            # hidden = hidden.to(device)
             next_char = decode_tensor(output[0], topk=3)
             if next_char == "EOL" or len(result) > 100:
                 return result
