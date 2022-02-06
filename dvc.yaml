@@ -6,8 +6,11 @@ stages:
     - src/train.py
     - src/model.py
     params:
-    - train.epochs
     - train.learning_rate
+    - train.batch_size
+    - train.segment_length
+    - train.iterations
+    - train.report_every
     outs:
     - data/models/
     metrics:

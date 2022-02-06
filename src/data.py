@@ -72,13 +72,12 @@ class TextDataset(Dataset):
         line = self.text[start : start + self.segment_length]
 
         input = self.get_input_tensor(line)
-        output = self.get_input_tensor(line)
+        output = self.get_target_tensor(line)
 
         return input, output
 
     def get_input_tensor(self, line):
         onehot_matrix = [character_onehot(c, self.character_lookup) for c in line]
-        # onehot_matrix.append(character_onehot("EOL"))
         tensor = torch.tensor(onehot_matrix)
         # tensor = torch.unsqueeze(tensor, 0)
 
@@ -87,7 +86,7 @@ class TextDataset(Dataset):
 
     def get_target_tensor(self, line):
         letter_indexes = [self.character_lookup[char] for i, char in enumerate(line) if i != 0]
-        letter_indexes.append(self.character_lookup["EOL"])
+        # letter_indexes.append(self.character_lookup["EOL"])
         tensor = torch.LongTensor(letter_indexes)
         # tensor = torch.unsqueeze(tensor, 0)
 

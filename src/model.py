@@ -26,8 +26,8 @@ import torch.nn as nn
 #     def init_hidden(self):
 #         return torch.zeros(1, self.hidden_size)
 
-class LSTM(nn.Module):
 
+class LSTM(nn.Module):
     def __init__(self, embedding_size, hidden_size):
         super(LSTM, self).__init__()
         self.sigmoid = nn.Sigmoid()
@@ -40,15 +40,14 @@ class LSTM(nn.Module):
 
         self.output_gate = nn.Linear(embedding_size + hidden_size, hidden_size)
 
-
     def forward(self, input, state):
         hidden, cell_state = state
         input_combined = torch.cat((input, hidden), 1)
-        
-        forget_gate = self.sigmoid(self.forget_gate(input_combined)) 
-        input_gate = self.sigmoid(self.input_gate(input_combined)) 
-        update_gate = self.tanh(self.update_gate(input_combined)) 
-        output_gate = self.sigmoid(self.output_gate(input_combined)) 
+
+        forget_gate = self.sigmoid(self.forget_gate(input_combined))
+        input_gate = self.sigmoid(self.input_gate(input_combined))
+        update_gate = self.tanh(self.update_gate(input_combined))
+        output_gate = self.sigmoid(self.output_gate(input_combined))
 
         updated_cell_state = (cell_state * forget_gate) + (input_gate * update_gate)
 
@@ -58,8 +57,10 @@ class LSTM(nn.Module):
 
 
 class RNN(nn.Module):
-    def __init__(self, input_size, hidden_size, output_size):
+    def __init__(self, input_size, hidden_size, output_size, device):
         super(RNN, self).__init__()
+        self.device = device
+        
         self.hidden_size = hidden_size
 
         self.lstm_1 = LSTM(input_size, hidden_size)
@@ -70,6 +71,9 @@ class RNN(nn.Module):
         self.softmax = nn.LogSoftmax(dim=1)
 
     def forward(self, input, state):
+        state = tuple([s.to(self.device) for s in state])
+        input = input.to(self.device)
+
         output, state = self.lstm_1(input, state)
         output, state = self.lstm_2(output, state)
         output, state = self.lstm_3(output, state)
@@ -80,4 +84,7 @@ class RNN(nn.Module):
         return output, state
 
     def init_state(self, batch_size):
-        return (torch.zeros(batch_size, self.hidden_size), torch.zeros(batch_size, self.hidden_size))
+        return (
+            torch.zeros(batch_size, self.hidden_size),
+            torch.zeros(batch_size, self.hidden_size),
+        )

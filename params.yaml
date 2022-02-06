@@ -1,7 +1,7 @@
 train:
-  learning_rate: 0.0005
+  learning_rate: 0.001
   batch_size: 64
-  segment_length: 1000
+  segment_length: 100
   iterations: 10000
   report_every: 10
   hidden_size: 128
