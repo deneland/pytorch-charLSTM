@@ -1,6 +1,6 @@
 stages:
   train:
-    cmd: python3 src/train.py data/names/English.txt
+    cmd: python3 src/train.py data/texts/shakespeare.txt
     deps:
     - data/names/English.txt
     - src/train.py

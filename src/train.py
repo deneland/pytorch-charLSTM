@@ -53,6 +53,13 @@ if __name__ == "__main__":
 
     os.makedirs("data/models", exist_ok=True)
 
+    with open("character_lookup.json", "w") as fd:
+        json.dump(
+            ds.character_lookup,
+            fd,
+            indent=4,
+        )
+
     if torch.cuda.is_available():
         device = torch.device("cuda")
     else:
@@ -70,6 +77,7 @@ if __name__ == "__main__":
     ts = time.time()
     for iter_idx in range(params["iterations"]):
         batch = next(iter(dataloader))
+
         output, loss = train(net, batch, params)
         avg_loss += loss
 
@@ -97,9 +105,4 @@ if __name__ == "__main__":
             indent=4,
         )
 
-    with open("character_lookup.json", "w") as fd:
-        json.dump(
-            ds.character_lookup,
-            fd,
-            indent=4,
-        )
+
