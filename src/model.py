@@ -39,17 +39,16 @@ class LanguageModel(nn.Module):
         self.hidden_size = params['hidden_size']
 
         self.lstms = []
-        self.lstms.append(LSTM(input_size, self.hidden_size))
-        for i in range(1, params['n_layers']):
-            self.lstms.append(LSTM(self.hidden_size, self.hidden_size))
-
+        self.lstms.append(LSTM(input_size, self.hidden_size).to(device))
+        for _ in range(1, params['n_layers']):
+            self.lstms.append(LSTM(self.hidden_size, self.hidden_size).to(device))
+        
         self.output = nn.Linear(self.hidden_size, input_size)
         self.dropout = nn.Dropout(params['dropout'])
         self.softmax = nn.LogSoftmax(dim=1)
 
     def forward(self, input, state):
-        state = tuple([s.to(self.device) for s in state])
-        output = input.to(self.device)
+        output = input
 
         for layer in self.lstms:
             output, state = layer(output, state)

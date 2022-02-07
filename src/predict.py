@@ -16,9 +16,10 @@ def sample(net, init_char, character_lookup, batch_size):
     with torch.no_grad():
         result = init_char
 
-        input = get_input_tensor(result[-1], character_lookup)[0]
+        input = get_input_tensor(result[-1], character_lookup)[0].to(net.device)
 
         hidden = net.init_state(batch_size)
+        hidden = tuple([h.to(net.device) for h in hidden])
 
         while True:
             output, hidden = net(input, hidden)
@@ -27,7 +28,7 @@ def sample(net, init_char, character_lookup, batch_size):
                 return result
 
             result += next_char
-            input = get_input_tensor(result[-1], character_lookup)[0]
+            input = get_input_tensor(result[-1], character_lookup)[0].to(net.device)
 
 
 if __name__ == "__main__":
@@ -43,7 +44,7 @@ if __name__ == "__main__":
     n_characters = len(characters)
 
     net = LanguageModel(n_characters, model_params, torch.device("cpu"))
-    
+
     net.load_state_dict(torch.load(sys.argv[1]))
     net.eval()
 

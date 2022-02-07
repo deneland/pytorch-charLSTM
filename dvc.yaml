@@ -11,7 +11,9 @@ stages:
     - train.learning_rate
     - train.batch_size
     - train.segment_length
-    - train.iterations
+    - train.epochs
+    - train.train_split
+    - train.workers
     - model.hidden_size
     - model.n_layers
     - model.dropout

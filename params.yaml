@@ -1,12 +1,11 @@
 train:
   learning_rate: 0.01
-  batch_size: 32
-  segment_length: 200
+  batch_size: 256
+  segment_length: 500
   epochs: 30
-  iterations: 10000
   train_split: 0.7
-  workers: 3
+  workers: 12
 model:
-  hidden_size: 64
-  n_layers: 1
+  hidden_size: 256
+  n_layers: 3
   dropout: 0.1
