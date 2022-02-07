@@ -24,10 +24,9 @@ def train(net, batch, optimizer, params):
 
     loss = 0
     input_tensor, target_tensor = batch[0].to(net.device), batch[1].to(net.device)
-    # input_tensor, target_tensor = batch
 
     n_char = input_tensor.shape[1]
-    for char_idx in range(n_char - 1):
+    for char_idx in range(n_char):
         output, hidden = net(input_tensor[:, char_idx, :], hidden)
         loss += criterion(output, target_tensor[:, char_idx])
 
@@ -47,10 +46,9 @@ def validate(net, batch, params):
 
     loss = 0
     input_tensor, target_tensor = batch[0].to(net.device), batch[1].to(net.device)
-    # input_tensor, target_tensor = batch
 
     n_char = input_tensor.shape[1]
-    for char_idx in range(n_char - 1):
+    for char_idx in range(n_char):
         output, hidden = net(input_tensor[:, char_idx, :], hidden)
         loss += criterion(output, target_tensor[:, char_idx])
 
