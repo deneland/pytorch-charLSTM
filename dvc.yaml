@@ -6,6 +6,7 @@ stages:
     - src/train.py
     - src/model.py
     - src/data.py
+    - src/predict.py
     params:
     - train.learning_rate
     - train.batch_size
