@@ -32,14 +32,18 @@ def sample(net, init_char, character_lookup, batch_size):
 
 if __name__ == "__main__":
     import json
+    import yaml
 
     with open(sys.argv[2], "r") as f:
-        character_lookup = json.load(f)
+        vocabulary = json.load(f)
 
-    characters = list(character_lookup.keys())
+    model_params = yaml.safe_load(open("params.yaml"))["model"]
+
+    characters = list(vocabulary.keys())
     n_characters = len(characters)
 
-    net = RNN(n_characters, 128, n_characters, torch.device("cpu"))
+    net = LanguageModel(n_characters, model_params, torch.device("cpu"))
+    
     net.load_state_dict(torch.load(sys.argv[1]))
     net.eval()
 
@@ -48,5 +52,5 @@ if __name__ == "__main__":
     else:
         first_char = random.choice(characters)
 
-    generated = sample(net, first_char, character_lookup, 1)
+    generated = sample(net, first_char, vocabulary, 1)
     print(generated)

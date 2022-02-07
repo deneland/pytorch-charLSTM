@@ -35,6 +35,23 @@ def train(net, batch, optimizer, params):
     return output, loss.item() / input_tensor.shape[1]
 
 
+def validate(net, batch, params):
+    criterion = torch.nn.NLLLoss()
+
+    hidden = net.init_state(params["batch_size"])
+    net.zero_grad()
+
+    loss = 0
+    input_tensor, target_tensor = batch[0].to(net.device), batch[1].to(net.device)
+
+    n_char = input_tensor.shape[1]
+    for char_idx in range(n_char - 1):
+        output, hidden = net(input_tensor[:, char_idx, :], hidden)
+        loss += criterion(output, target_tensor[:, char_idx])
+
+    return output, loss.item() / input_tensor.shape[1]
+
+
 def time_since(since):
     now = time.time()
     s = now - since
@@ -46,28 +63,27 @@ def time_since(since):
 if __name__ == "__main__":
     params = yaml.safe_load(open("params.yaml"))["train"]
     model_params = yaml.safe_load(open("params.yaml"))["model"]
+    with open('vocabulary.json', 'r') as f:
+        vocabulary = json.load(f)
 
-    ds = TextDataset(sys.argv[1], params["segment_length"])
-    dataloader = DataLoader(
-        ds, batch_size=params["batch_size"], shuffle=False, num_workers=12
+    train_dataset, val_dataset = get_datasets(sys.argv[1], vocabulary, params)
+
+    train_dataloader = DataLoader(
+        train_dataset, batch_size=params["batch_size"], shuffle=False, num_workers=params['workers'], drop_last=True
+    )
+    val_dataloader = DataLoader(
+        val_dataset, batch_size=params["batch_size"], shuffle=False, num_workers=params['workers'], drop_last=True
     )
 
     os.makedirs("data/models", exist_ok=True)
-
-    with open("character_lookup.json", "w") as fd:
-        json.dump(
-            ds.character_lookup,
-            fd,
-            indent=4,
-        )
 
     if torch.cuda.is_available():
         device = torch.device("cuda")
     else:
         device = torch.device("cpu")
 
-    n_characters = len(list(ds.character_lookup.keys()))
-    net = LanguageModel(n_characters, params["hidden_size"], device, model_params)
+    n_characters = len(list(vocabulary.keys()))
+    net = LanguageModel(n_characters, device, model_params)
     net.to(device)
 
     if len(sys.argv) > 2:
@@ -75,40 +91,53 @@ if __name__ == "__main__":
 
     optimizer = torch.optim.SGD(net.parameters(), lr=params["learning_rate"])
 
-    avg_loss = 0
-    losses = []
+    
+    train_losses = []
+    val_losses = []
+    best_loss = float('inf')
+
     ts = time.time()
-    for iter_idx in range(params["iterations"]):
-        batch = next(iter(dataloader))
+    for epoch_idx in range(params["epochs"]):
+        train_loss = 0
+        for batch_idx, batch in enumerate(train_dataloader):
+            output, loss = train(net, batch, optimizer, params)
+            train_loss += loss
+        train_loss /= batch_idx
+        train_losses.append((epoch_idx, train_loss))
 
-        output, loss = train(net, batch, optimizer, params)
-        avg_loss += loss
+        val_loss = 0
+        for batch_idx, batch in enumerate(val_dataloader):
+            output, loss = validate(net, batch, params)
+            val_loss += loss
+        val_loss /= batch_idx
+        val_losses.append((epoch_idx, val_loss))
 
-        if iter_idx % params["report_every"] == 0:
-            avg_loss /= params["report_every"]
+        print('***********************************************************')
+        print(f"{time_since(ts)} - epoch {epoch_idx :7d} - train_loss {train_loss :.4f} - val_loss {val_loss :.4f}")
 
-            print(f"{time_since(ts)} - iteration {iter_idx :7d} - loss {avg_loss :.4f}")
+        torch.save(net.state_dict(), "data/models/last.pth")
+        if val_loss < best_loss:
+            best_loss = val_loss
+            torch.save(net.state_dict(), "data/models/best.pth")
+            print('\t NEW BEST')
 
-            for i in range(3):
-                print("\n")
-                print(
-                    sample(
-                        net,
-                        random.choice(list(ds.character_lookup.keys())),
-                        ds.character_lookup,
-                        1,
-                    )
-                )
 
-            losses.append((iter_idx, avg_loss))
-            torch.save(net.state_dict(), "data/models/model.pth")
+        print(
+            sample(
+                net,
+                random.choice(list(vocabulary.keys())),
+                vocabulary,
+                1,
+            )
+        )
+
 
     with open("scores.json", "w") as fd:
-        json.dump({"train_loss": avg_loss}, fd, indent=4)
+        json.dump({"train_loss": train_losses, "validation_loss": val_losses}, fd, indent=4)
 
     with open("loss_curve.json", "w") as fd:
         json.dump(
-            {"prc": [{"epoch": e, "loss": loss} for e, loss in losses]},
+            {"train_losses": [{"epoch": e, "train_loss": loss} for e, loss in enumerate(train_losses)], "val_losses": [{"epoch": e, "validationloss": loss} for e, loss in enumerate(val_losses)]},
             fd,
             indent=4,
         )
