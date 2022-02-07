@@ -5,14 +5,10 @@ from torch.utils.data import Dataset
 import torch.nn as nn
 
 
-def decode_tensor(tensor, characters, topk=1):
-    try:
-        _, topi = tensor.topk(topk)
-        topi = random.choice(topi)
-        next_char = characters[topi]
-    except IndexError:
-        next_char = "EOL"
-
+def decode_tensor(tensor, characters):
+    weights = torch.exp(tensor.squeeze())
+    next_char = random.choices(characters, weights=weights)[0]
+    
     return next_char
 
 

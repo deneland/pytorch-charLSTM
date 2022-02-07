@@ -12,23 +12,28 @@ def get_input_tensor(line, character_lookup):
     return tensor
 
 
-def sample(net, init_char, character_lookup, batch_size):
+def sample(net, primer_sequence, character_lookup, batch_size, max_len=100):
     with torch.no_grad():
-        result = init_char
-
-        input = get_input_tensor(result[-1], character_lookup)[0].to(net.device)
 
         hidden = net.init_state(batch_size)
         hidden = tuple([h.to(net.device) for h in hidden])
 
+        for prime_char in primer_sequence:
+            output = get_input_tensor(prime_char, character_lookup)[0].to(net.device)
+            output, hidden = net(output, hidden)
+        
+        result = primer_sequence
+
         while True:
-            output, hidden = net(input, hidden)
-            next_char = decode_tensor(output[0], list(character_lookup.keys()), topk=1)
-            if next_char == "EOL" or len(result) > 100:
+            output, hidden = net(output, hidden)
+
+            weights = torch.exp(output.squeeze())
+            next_char = random.choices(list(character_lookup.keys()), weights=weights)[0]
+            if len(result) > max_len:
                 return result
 
             result += next_char
-            input = get_input_tensor(result[-1], character_lookup)[0].to(net.device)
+            output = get_input_tensor(result[-1], character_lookup)[0].to(net.device)
 
 
 if __name__ == "__main__":
@@ -43,7 +48,7 @@ if __name__ == "__main__":
     characters = list(vocabulary.keys())
     n_characters = len(characters)
 
-    net = LanguageModel(n_characters, model_params, torch.device("cpu"))
+    net = LanguageModel(n_characters, torch.device("cpu"), model_params)
 
     net.load_state_dict(torch.load(sys.argv[1]))
     net.eval()
@@ -53,5 +58,6 @@ if __name__ == "__main__":
     else:
         first_char = random.choice(characters)
 
-    generated = sample(net, first_char, vocabulary, 1)
+    generated = sample(net, first_char, vocabulary, 1, max_len=500)
     print(generated)
+
