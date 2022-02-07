@@ -37,22 +37,23 @@ def train(net, batch, optimizer, params):
 
 
 def validate(net, batch, params):
-    criterion = torch.nn.NLLLoss()
+    with torch.no_grad():
+        criterion = torch.nn.NLLLoss()
 
-    hidden = net.init_state(params["batch_size"])
-    hidden = tuple([h.to(net.device) for h in hidden])
+        hidden = net.init_state(params["batch_size"])
+        hidden = tuple([h.to(net.device) for h in hidden])
 
-    net.zero_grad()
+        net.zero_grad()
 
-    loss = 0
-    input_tensor, target_tensor = batch[0].to(net.device), batch[1].to(net.device)
+        loss = 0
+        input_tensor, target_tensor = batch[0].to(net.device), batch[1].to(net.device)
 
-    n_char = input_tensor.shape[1]
-    for char_idx in range(n_char):
-        output, hidden = net(input_tensor[:, char_idx, :], hidden)
-        loss += criterion(output, target_tensor[:, char_idx])
+        n_char = input_tensor.shape[1]
+        for char_idx in range(n_char):
+            output, hidden = net(input_tensor[:, char_idx, :], hidden)
+            loss += criterion(output, target_tensor[:, char_idx])
 
-    return output, loss.item() / input_tensor.shape[1]
+        return output, loss.item() / input_tensor.shape[1]
 
 
 def time_since(since):
@@ -93,7 +94,7 @@ if __name__ == "__main__":
         net.load_state_dict(torch.load(sys.argv[2]))
 
     optimizer = torch.optim.SGD(net.parameters(), lr=params["learning_rate"])
-
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=params['patience'], factor=0.5, min_lr=0.0001, verbose=True)
     
     train_losses = []
     val_losses = []
@@ -115,8 +116,10 @@ if __name__ == "__main__":
         val_loss /= batch_idx
         val_losses.append((epoch_idx, val_loss))
 
-        print('***********************************************************')
-        print(f"{time_since(ts)} - epoch {epoch_idx :7d} - train_loss {train_loss :.4f} - val_loss {val_loss :.4f}")
+        scheduler.step(val_loss)
+
+        print('\n***********************************************************')
+        print(f"{time_since(ts)} - epoch {epoch_idx :7d} - train_loss {train_loss :.4f} - val_loss {val_loss :.4f} - lr {optimizer.param_groups[0]['lr'] :.4f}")
 
         torch.save(net.state_dict(), "data/models/last.pth")
         if val_loss < best_loss:
