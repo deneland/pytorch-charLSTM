@@ -15,7 +15,7 @@ import yaml
 import json
 
 
-def train(net, batch, params):
+def train(net, batch, optimizer, params):
     criterion = torch.nn.NLLLoss()
 
     hidden = net.init_state(params["batch_size"]) 
@@ -30,11 +30,9 @@ def train(net, batch, params):
         loss += criterion(output, target_tensor[:, char_idx])
 
     loss.backward()
+    optimizer.step()
 
-    for p in net.parameters():
-        p.data.add_(p.grad.data, alpha=-params["learning_rate"])
-
-    return output, loss.item() / input_tensor.shape[0]
+    return output, loss.item() / input_tensor.shape[1]
 
 
 def time_since(since):
@@ -50,6 +48,7 @@ if __name__ == "__main__":
 
     ds = TextDataset(sys.argv[1], params["segment_length"])
     dataloader = DataLoader(ds, batch_size=params["batch_size"], shuffle=False, num_workers=12)
+
 
     os.makedirs("data/models", exist_ok=True)
 
@@ -72,13 +71,15 @@ if __name__ == "__main__":
     if len(sys.argv) > 2:
         net.load_state_dict(torch.load(sys.argv[2]))
 
+    optimizer = torch.optim.SGD(net.parameters(), lr=params["learning_rate"])
+
     avg_loss = 0
     losses = []
     ts = time.time()
     for iter_idx in range(params["iterations"]):
         batch = next(iter(dataloader))
 
-        output, loss = train(net, batch, params)
+        output, loss = train(net, batch, optimizer, params)
         avg_loss += loss
 
         if iter_idx % params["report_every"] == 0:
