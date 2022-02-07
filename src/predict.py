@@ -11,13 +11,14 @@ def get_input_tensor(line, character_lookup):
     tensor = torch.unsqueeze(tensor, 0)
     return tensor
 
+
 def sample(net, init_char, character_lookup, batch_size):
     with torch.no_grad():
         result = init_char
 
         input = get_input_tensor(result[-1], character_lookup)[0]
-        
-        hidden = net.init_state(batch_size) 
+
+        hidden = net.init_state(batch_size)
 
         while True:
             output, hidden = net(input, hidden)
@@ -32,13 +33,13 @@ def sample(net, init_char, character_lookup, batch_size):
 if __name__ == "__main__":
     import json
 
-    with open(sys.argv[2], 'r') as f:
+    with open(sys.argv[2], "r") as f:
         character_lookup = json.load(f)
 
     characters = list(character_lookup.keys())
     n_characters = len(characters)
 
-    net = RNN(n_characters, 128, n_characters, torch.device('cpu'))
+    net = RNN(n_characters, 128, n_characters, torch.device("cpu"))
     net.load_state_dict(torch.load(sys.argv[1]))
     net.eval()
 

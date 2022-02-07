@@ -1,16 +1,20 @@
 stages:
   train:
-    cmd: python3 src/train.py data/texts/shakespeare.txt
+    cmd: python3 src/train.py data/texts/tinyshakespeare.txt
     deps:
     - data/names/English.txt
     - src/train.py
     - src/model.py
+    - src/data.py
     params:
     - train.learning_rate
     - train.batch_size
     - train.segment_length
     - train.iterations
     - train.report_every
+    - model.hidden_size
+    - model.n_layers
+    - model.dropout
     outs:
     - data/models/
     metrics:

@@ -18,14 +18,14 @@ import json
 def train(net, batch, optimizer, params):
     criterion = torch.nn.NLLLoss()
 
-    hidden = net.init_state(params["batch_size"]) 
+    hidden = net.init_state(params["batch_size"])
     net.zero_grad()
 
     loss = 0
     input_tensor, target_tensor = batch[0].to(net.device), batch[1].to(net.device)
 
     n_char = input_tensor.shape[1]
-    for char_idx in range(n_char-1):
+    for char_idx in range(n_char - 1):
         output, hidden = net(input_tensor[:, char_idx, :], hidden)
         loss += criterion(output, target_tensor[:, char_idx])
 
@@ -45,10 +45,12 @@ def time_since(since):
 
 if __name__ == "__main__":
     params = yaml.safe_load(open("params.yaml"))["train"]
+    model_params = yaml.safe_load(open("params.yaml"))["model"]
 
     ds = TextDataset(sys.argv[1], params["segment_length"])
-    dataloader = DataLoader(ds, batch_size=params["batch_size"], shuffle=False, num_workers=12)
-
+    dataloader = DataLoader(
+        ds, batch_size=params["batch_size"], shuffle=False, num_workers=12
+    )
 
     os.makedirs("data/models", exist_ok=True)
 
@@ -65,7 +67,7 @@ if __name__ == "__main__":
         device = torch.device("cpu")
 
     n_characters = len(list(ds.character_lookup.keys()))
-    net = RNN(n_characters, params["hidden_size"], n_characters, device)
+    net = LanguageModel(n_characters, params["hidden_size"], device, model_params)
     net.to(device)
 
     if len(sys.argv) > 2:
@@ -90,7 +92,12 @@ if __name__ == "__main__":
             for i in range(3):
                 print("\n")
                 print(
-                    sample(net, random.choice(list(ds.character_lookup.keys())), ds.character_lookup, 1)
+                    sample(
+                        net,
+                        random.choice(list(ds.character_lookup.keys())),
+                        ds.character_lookup,
+                        1,
+                    )
                 )
 
             losses.append((iter_idx, avg_loss))
@@ -105,5 +112,3 @@ if __name__ == "__main__":
             fd,
             indent=4,
         )
-
-

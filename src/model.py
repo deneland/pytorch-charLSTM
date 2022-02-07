@@ -2,31 +2,6 @@ import torch
 import torch.nn as nn
 
 
-# class RNN(nn.Module):
-#     def __init__(self, input_size, hidden_size, output_size):
-#         super(RNN, self).__init__()
-#         self.hidden_size = hidden_size
-
-#         self.i2h = nn.Linear(input_size + hidden_size, hidden_size)
-#         self.i2o = nn.Linear(input_size + hidden_size, output_size)
-#         self.o2o = nn.Linear(hidden_size + output_size, output_size)
-#         self.dropout = nn.Dropout(0.1)
-#         self.softmax = nn.LogSoftmax(dim=1)
-
-#     def forward(self, input, hidden):
-#         input_combined = torch.cat((input, hidden), 1)
-#         hidden = self.i2h(input_combined)
-#         output = self.i2o(input_combined)
-#         output_combined = torch.cat((hidden, output), 1)
-#         output = self.o2o(output_combined)
-#         output = self.dropout(output)
-#         output = self.softmax(output)
-#         return output, hidden
-
-#     def init_hidden(self):
-#         return torch.zeros(1, self.hidden_size)
-
-
 class LSTM(nn.Module):
     def __init__(self, embedding_size, hidden_size):
         super(LSTM, self).__init__()
@@ -56,29 +31,31 @@ class LSTM(nn.Module):
         return updated_hidden, (updated_hidden, updated_cell_state)
 
 
-class RNN(nn.Module):
-    def __init__(self, input_size, hidden_size, output_size, device):
-        super(RNN, self).__init__()
+class LanguageModel(nn.Module):
+    def __init__(self, input_size, device, params):
+        super(LanguageModel, self).__init__()
         self.device = device
-        
-        self.hidden_size = hidden_size
 
-        self.lstm_1 = LSTM(input_size, hidden_size)
-        self.lstm_2 = LSTM(hidden_size, hidden_size)
-        self.lstm_3 = LSTM(hidden_size, hidden_size)
-        self.output = nn.Linear(hidden_size, output_size)
-        self.dropout = nn.Dropout(0.1)
+        self.hidden_size = params['hidden_size']
+
+        self.lstms = []
+        self.lstms.append(LSTM(input_size, self.hidden_size))
+        for i in range(1, params['n_layers']):
+            self.lstms.append(LSTM(self.hidden_size, self.hidden_size))
+
+        self.output = nn.Linear(self.hidden_size, input_size)
+        self.dropout = nn.Dropout(params['dropout'])
         self.softmax = nn.LogSoftmax(dim=1)
 
     def forward(self, input, state):
         state = tuple([s.to(self.device) for s in state])
-        input = input.to(self.device)
+        output = input.to(self.device)
 
-        output, state = self.lstm_1(input, state)
-        output, state = self.lstm_2(output, state)
-        output, state = self.lstm_3(output, state)
+        for layer in self.lstms:
+            output, state = layer(output, state)
+            output = self.dropout(output)
+
         output = self.output(output)
-        output = self.dropout(output)
         output = self.softmax(output)
 
         return output, state

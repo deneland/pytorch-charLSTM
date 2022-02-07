@@ -1,7 +1,10 @@
 train:
   learning_rate: 0.001
-  batch_size: 1
-  segment_length: 100
+  batch_size: 32
+  segment_length: 200
   iterations: 10000
-  report_every: 10
+  report_every: 5
+model:
   hidden_size: 128
+  n_layers: 3
+  dropout: 0.1

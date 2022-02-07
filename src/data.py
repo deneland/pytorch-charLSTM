@@ -23,7 +23,9 @@ class TextDataset(Dataset):
 
         if character_lookup is None:
             characters = list(set(text))
-            self.character_lookup = {character: i for i, character in enumerate(characters)}
+            self.character_lookup = {
+                character: i for i, character in enumerate(characters)
+            }
         else:
             character_lookup = character_lookup
 
@@ -31,7 +33,7 @@ class TextDataset(Dataset):
         self.segment_length = segment_length
 
         self.indexes = torch.LongTensor([self.character_lookup[c] for c in text])
-        self.onehot =  nn.functional.one_hot(self.indexes, self.n_char)
+        self.onehot = nn.functional.one_hot(self.indexes, self.n_char)
 
     def __len__(self):
         return self.indexes.shape[0]
@@ -40,15 +42,17 @@ class TextDataset(Dataset):
         start = random.randint(0, len(self) - self.segment_length)
 
         input = self.onehot[start : start + self.segment_length]
-        output = self.indexes[start+1 : start + self.segment_length]
+        output = self.indexes[start + 1 : start + self.segment_length]
 
         return input, output
 
 
-if __name__ == '__main__':
-    ds = TextDataset('data/texts/shakespeare.txt', 300)
-
+if __name__ == "__main__":
+    import sys
     from torch.utils.data import DataLoader
+
+    ds = TextDataset(sys.argv[1], int(sys.argv[2]))
+    print(ds.character_lookup)
 
     dataloader = DataLoader(ds, batch_size=4, shuffle=False)
 
@@ -57,6 +61,3 @@ if __name__ == '__main__':
 
         print(batch[0].shape)
         print(batch[1].shape)
-
-
-
