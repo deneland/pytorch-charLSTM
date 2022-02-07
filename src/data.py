@@ -24,16 +24,13 @@ class TextDataset(Dataset):
 
         self.indexes = torch.LongTensor([[vocabulary[c] for c in segment] for segment in segments])
         self.onehot = nn.functional.one_hot(self.indexes, self.n_char)
+        self.indexes = self.indexes[:, 1:]
+        self.onehot = self.onehot[:, :-1, :]
 
     def __len__(self):
         return self.indexes.shape[0]
 
     def __getitem__(self, idx):
-        # start = random.randint(0, len(self) - self.segment_length)
-
-        # input = self.onehot[start : start + self.segment_length]
-        # output = self.indexes[start + 1 : start + self.segment_length]
-
         input = self.onehot[idx]
         output = self.indexes[idx]
 
@@ -71,14 +68,9 @@ if __name__ == "__main__":
         vocabulary = json.load(f)
 
     params = yaml.safe_load(open("params.yaml"))["train"]
-    print(params)
     ds_train, ds_val = get_datasets(sys.argv[1], vocabulary, params)
 
-    from torch.utils.data import DataLoader
-    train_dataloader = DataLoader(
-        ds_train, batch_size=params["batch_size"], shuffle=False, num_workers=12
-    )
+    input, target = ds_train[0]
 
-    for b in train_dataloader:
-        print(b)
-        break
+    for ch_idx in range(target.shape[0]):
+        print(decode_tensor(input[ch_idx, :], list(vocabulary.keys())), list(vocabulary.keys())[target[ch_idx]])
